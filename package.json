@@ -1,18 +1,19 @@
 {
   "name": "nexus-btp-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Serveur Nexus BTP",
+  "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "build": "npx prisma generate",
+    "postinstall": "npx prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.18.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -22,7 +23,6 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "@prisma/client": "^6.18.0",
     "nodemon": "^3.1.11",
     "prisma": "^6.18.0"
   }

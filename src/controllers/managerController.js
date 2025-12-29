@@ -374,3 +374,101 @@ exports.receiveSupply = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// 11. Initialiser ou Ajouter du Stock (Setup)
+exports.addInventoryItem = async (req, res) => {
+    try {
+        const { projectId, name, category, quantity, unit, type, minThreshold } = req.body;
+        
+        const item = await prisma.inventoryItem.create({
+            data: {
+                projectId,
+                name,
+                category,
+                quantity: parseInt(quantity),
+                initialQuantity: parseInt(quantity), // Au départ, initial = actuel
+                unit,
+                type, // CONSUMABLE ou EQUIPMENT
+                minThreshold: parseInt(minThreshold) || 5
+            }
+        });
+        
+        res.status(201).json(item);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// 12. Enregistrer une utilisation (Tracking)
+exports.recordStockUsage = async (req, res) => {
+    try {
+        const { itemId, quantity, action, note } = req.body;
+        const userId = req.user.id;
+        const qty = parseInt(quantity);
+
+        // 1. Vérifier le stock
+        const item = await prisma.inventoryItem.findUnique({ where: { id: itemId } });
+        
+        if (!item) return res.status(404).json({ message: "Article introuvable" });
+        
+        // Logique : USAGE et LOSS diminuent le stock, RESTOCK et RETURN l'augmentent
+        let newQuantity = item.quantity;
+        if (action === 'USAGE' || action === 'LOSS') {
+            if (item.quantity < qty) return res.status(400).json({ message: "Stock insuffisant !" });
+            newQuantity -= qty;
+        } else {
+            newQuantity += qty;
+            // Si c'est un RESTOCK, on augmente aussi le "total vu" (initialQuantity est un peu impropre ici, disons "Total Acquis")
+            if (action === 'RESTOCK') {
+                await prisma.inventoryItem.update({
+                    where: { id: itemId },
+                    data: { initialQuantity: item.initialQuantity + qty }
+                });
+            }
+        }
+
+        // 2. Mise à jour atomique (Transaction)
+        const [updatedItem, log] = await prisma.$transaction([
+            prisma.inventoryItem.update({
+                where: { id: itemId },
+                data: { quantity: newQuantity }
+            }),
+            prisma.inventoryLog.create({
+                data: {
+                    itemId,
+                    userId,
+                    action,
+                    quantity: qty,
+                    note
+                }
+            })
+        ]);
+
+        res.json({ updatedItem, log });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// 13. Récupérer l'historique complet
+exports.getInventoryDetails = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        
+        const inventory = await prisma.inventoryItem.findMany({
+            where: { projectId },
+            include: {
+                logs: {
+                    orderBy: { date: 'desc' },
+                    take: 10, // Les 10 derniers mouvements
+                    include: { user: { select: { firstName: true, lastName: true } } }
+                }
+            }
+        });
+        
+        res.json(inventory);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

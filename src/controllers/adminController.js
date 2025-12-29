@@ -304,6 +304,34 @@ exports.updateSupplyStatus = async (req, res) => {
 };
 
 
+// 14. Récupérer l'inventaire complet d'un projet (Vue Admin)
+exports.getProjectInventoryAdmin = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+
+        const inventory = await prisma.inventoryItem.findMany({
+            where: { projectId },
+            include: {
+                logs: {
+                    orderBy: { date: 'desc' },
+                    take: 20, // On prend les 20 derniers mouvements
+                    include: { user: { select: { firstName: true, lastName: true, role: true } } }
+                }
+            }
+        });
+
+        const project = await prisma.project.findUnique({
+            where: { id: projectId },
+            select: { name: true, location: true }
+        });
+
+        res.json({ project, inventory });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
 
 
 

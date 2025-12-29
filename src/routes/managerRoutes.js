@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { getManagerDashboard, getManagerTeams, createWorker, getManagerReports, validateReport, updateProjectProgress, getManagerProjectDetails,
-createTask, getProjectTasks, updateTask, getProjectLogistics, createSupplyRequest, receiveSupply } = require('../controllers/managerController');
+createTask, getProjectTasks, updateTask, getProjectLogistics, createSupplyRequest, receiveSupply, addInventoryItem, recordStockUsage, getInventoryDetails  } = require('../controllers/managerController');
 
 
 router.use(protect);
@@ -28,6 +28,11 @@ router.put('/tasks/:taskId', updateTask);
 router.get('/projects/:projectId/logistics', getProjectLogistics);
 router.post('/supply-request', createSupplyRequest);
 router.put('/supply-request/:requestId/receive', receiveSupply);
+
+
+router.post('/inventory/add', addInventoryItem);
+router.post('/inventory/usage', recordStockUsage);
+router.get('/projects/:projectId/inventory-full', getInventoryDetails);
 
 
 module.exports = router;

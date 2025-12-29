@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -33,6 +33,8 @@ model User {
   supplyRequests    SupplyRequest[]
   // --- AJOUTE CETTE LIGNE ICI ---
   connectionLogs    ConnectionLog[] 
+  // 👇 AJOUT ICI
+  inventoryLogs InventoryLog[]
 }
 
 
@@ -193,21 +195,6 @@ model ContactRequest {
   createdAt DateTime @default(now())
 }
 
-// --- STOCK SUR LE CHANTIER ---
-model InventoryItem {
-  id           String   @id @default(uuid())
-  name         String
-  category     String?
-  quantity     Int
-  unit         String
-  minThreshold Int
-  
-  projectId    String
-  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
-  updatedAt    DateTime @updatedAt
-}
-
 // --- DEMANDES D'APPROVISIONNEMENT ---
 model SupplyRequest {
   id          String        @id @default(uuid())
@@ -252,6 +239,55 @@ model ConnectionLog {
   
   // Quand ?
   connectedAt DateTime @default(now())
+}
+
+
+model InventoryItem {
+  id              String       @id @default(uuid())
+  name            String
+  category        String?      // Ex: Gros Oeuvre, Plomberie
+  
+  // Nouveaux champs Smart Stock
+  type            MaterialType @default(CONSUMABLE) 
+  initialQuantity Int          @default(0) 
+  
+  quantity        Int          // Stock actuel
+  unit            String       // Ex: Sac, m3
+  minThreshold    Int          // Seuil alerte
+  
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  logs            InventoryLog[] // Historique des mouvements
+
+  updatedAt       DateTime     @updatedAt
+}
+
+model InventoryLog {
+  id          String   @id @default(uuid())
+  action      StockAction // USAGE (Utilisation), LOSS (Perte/Vol), RESTOCK (Ajout), RETURN (Retour outil)
+  quantity    Int      // Combien on a pris/ajouté
+  note        String?  // Ex: "Coulage dalle chambre 1"
+  
+  date        DateTime @default(now())
+  
+  itemId      String
+  item        InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  userId      String   // Qui a fait l'action (Manager)
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+enum MaterialType {
+  CONSUMABLE
+  EQUIPMENT
+}
+
+enum StockAction {
+  USAGE
+  LOSS
+  RESTOCK
+  RETURN
 }
 
 enum RequestStatus {

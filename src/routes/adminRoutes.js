@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 const { 
     getDashboardData, updateProjectStatus, getProjectDetails,
     getUsersByRole, getActiveProjects, assignManager,createManager, getUserDetails, getAllContacts, markContactAsRead, getAnalyticsData,
-    getAllSupplyRequests, updateSupplyStatus // <-- IMPOR // <-- IMPORT
+    getAllSupplyRequests, updateSupplyStatus, getProjectInventoryAdmin
 } = require('../controllers/adminController');
 
 // Protection globale : Seul l'ADMIN passe
@@ -35,5 +35,7 @@ router.get('/analytics', getAnalyticsData); // <-- NOUVELLE ROUTE
 // Routes Logistique Admin
 router.get('/logistics', getAllSupplyRequests);
 router.put('/logistics/:id/status', updateSupplyStatus);
+
+router.get('/projects/:projectId/inventory', getProjectInventoryAdmin); // <-- ROUTE
 
 module.exports = router;
