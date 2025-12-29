@@ -25,12 +25,20 @@ const monitoringRoutes = require('./routes/monitoringRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// --- 1. CONFIGURATION ---
+const frontendUrl = process.env.FRONTEND_URL || "*";
+
 app.use(cors({
-    origin: "*", // A changer par l'URL du frontend en production
+    origin: frontendUrl, // Autorise uniquement ton site Vercel
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true
 }));
+
+// --- 1. CONFIGURATION ---
+// app.use(cors({
+//     origin: "*", // A changer par l'URL du frontend en production
+//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//     credentials: true
+// }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,8 +52,16 @@ app.get('/', (req, res) => {
 });
 
 // --- 3. SOCKET.IO (TEMPS RÉEL) ---
+// const io = new Server(server, {
+//     cors: { origin: "*", methods: ["GET", "POST"] }
+// });
+
+// --- 3. SOCKET.IO (TEMPS RÉEL) ---
 const io = new Server(server, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
+    cors: { 
+        origin: frontendUrl, // On utilise la même variable ici !
+        methods: ["GET", "POST"] 
+    }
 });
 
 io.on('connection', (socket) => {
